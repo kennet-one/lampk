@@ -1,6 +1,4 @@
 // Node ID: 434115122
-//
-//
 
 #include "painlessMesh.h"
 
@@ -64,11 +62,20 @@ class Button {
 
 void buttonPressed() {
   buttonklick = !buttonklick;
+  echoSend();
 }
 
 const int buttonPin = 5;
 unsigned long debounceDelay = 50;
 Button button(buttonPin, debounceDelay, buttonPressed);
+
+void echoSend () {
+  if (buttonklick == 0) {
+      mesh.sendSingle(624409705,"La0");
+    } else {
+      mesh.sendSingle(624409705,"La1");
+    }
+}
 
 void receivedCallback( uint32_t from, String &msg ) {
 
@@ -86,16 +93,11 @@ void receivedCallback( uint32_t from, String &msg ) {
     } else {
       buttonklick = !buttonklick;
       mesh.sendSingle(624409705,"La1");
-      //Serial.print("La1");
     } 
   }
 
   if (str1.equals(str3)) {
-    if (buttonklick == 0) {
-      mesh.sendSingle(624409705,"La0");
-    } else {
-      mesh.sendSingle(624409705,"La1");
-    }
+    echoSend();
   }
 }
 
