@@ -6,6 +6,7 @@
 #define   MESH_PASSWORD   "kennet123"
 #define   MESH_PORT       5555
 
+Scheduler userScheduler;
 painlessMesh  mesh;
 
 bool buttonklick = 0;
@@ -104,7 +105,7 @@ void receivedCallback( uint32_t from, String &msg ) {
 void setup() {
   Serial.begin(9600);
   
-  mesh.init( MESH_PREFIX, MESH_PASSWORD, MESH_PORT );
+  mesh.init( MESH_PREFIX, MESH_PASSWORD, &userScheduler, MESH_PORT );
   mesh.onReceive(&receivedCallback);
 
   pinMode(4, INPUT);
