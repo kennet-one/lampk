@@ -1,5 +1,4 @@
 // Node ID: 434115122
-
 #include "painlessMesh.h"
 #include "mash_parameter.h"
 
@@ -8,90 +7,62 @@ painlessMesh  mesh;
 
 bool buttonklick = 0;
 
-unsigned long pMillis = 0;
-const long interval = 100;
-int lButState = LOW; // Зберігаємо останній стан кнопки
+int stableButState    = HIGH;           // Стабільний стан кнопки
+int lastButState      = HIGH;           // Останнє "сире" зчитування (ще не стабільне)
+unsigned long lastDebounceTime = 0;     // Коли востаннє змінювався стан
+const unsigned long DEBOUNCE_MS = 50;   // Антидребезг (50 мс)
 
-class Button {
-  public:
-    Button(int pin, unsigned long debounceDelay, void (*callback)()) {
-      this->pin = pin;
-      this->debounceDelay = debounceDelay;
-      this->callback = callback;
-      pinMode(pin, INPUT_PULLUP);
-      buttonState = HIGH;
-      lastButtonState = HIGH;
-      lastDebounceTime = 0;
-    }
-
-    void update() {
-      int reading = digitalRead(pin);
-
-      // Якщо стан кнопки змінився (через дребезг або натискання)
-      if (reading != lastButtonState) {
-        lastDebounceTime = millis();  // Запам'ятовуємо час останньої зміни стану
-      }
-
-      // Якщо зміна стану стабільна протягом debounceDelay
-      if ((millis() - lastDebounceTime) > debounceDelay) {
-        // Якщо стан кнопки змінився
-        if (reading != buttonState) {
-          buttonState = reading;
-
-          // Якщо кнопка натиснута
-          if (buttonState == LOW) {
-            callback();
-          }
-        }
-      }
-
-      // Запам'ятовуємо попередній стан кнопки
-      lastButtonState = reading;
-    }
-
-  private:
-    int pin;
-    int buttonState;
-    int lastButtonState;
-    unsigned long lastDebounceTime;
-    unsigned long debounceDelay;
-    void (*callback)();
-};
-
-void buttonPressed() {
-  buttonklick = !buttonklick;
-  echoSend();
+void power () {
+  if (buttonklick == 1) {
+    buttonklick = 0;
+    mesh.sendSingle(624409705,"La0");
+    mesh.sendSingle(1127818912,"La0");
+  } else {
+    buttonklick = !buttonklick;
+    mesh.sendSingle(624409705,"La1");
+    mesh.sendSingle(1127818912,"La1");
+  }
 }
-
-const int buttonPin = 5;
-unsigned long debounceDelay = 50;
-Button button(buttonPin, debounceDelay, buttonPressed);
 
 void echoSend () {
   if (buttonklick == 0) {
-      mesh.sendSingle(624409705,"La0");
-    } else {
-      mesh.sendSingle(624409705,"La1");
+    mesh.sendSingle(624409705,"La0");
+    mesh.sendSingle(1127818912,"La0");
+  } else {
+    mesh.sendSingle(624409705,"La1");
+    mesh.sendSingle(1127818912,"La1");
+  }
+}
+void powerBatt() {
+  int cButState = digitalRead(5);   // Зчитуємо "сирий" стан піну
+
+  if (cButState != lastButState) {
+    // Якщо змінився "сирий" стан — це може бути дребезг:
+    lastButState      = cButState; 
+    lastDebounceTime  = millis();  // Починаємо відлік
+  }
+
+  // Якщо пройшло більше 50 мс після останньої зміни
+  if ( (millis() - lastDebounceTime) > DEBOUNCE_MS ) {
+    // Якщо стабільний стан справді відрізняється від останнього зчитування
+    if (stableButState != lastButState) {
+      stableButState = lastButState;  // Оновлюємо стабільний стан
+
+      // Якщо кнопка перейшла в LOW => реальне натискання
+      if (stableButState == LOW) {
+        power();  // Викликаємо дію один раз
+      }
     }
+  }
 }
 
 void receivedCallback( uint32_t from, String &msg ) {
-
   String str1 = msg.c_str();
   String str2 = "lam";
   String str3 = "lamech";
-  Serial.print(str1);
-
 
   if (str1.equals(str2)) {
-
-    if (buttonklick == 1) {
-      buttonklick = 0;
-      mesh.sendSingle(624409705,"La0");
-    } else {
-      buttonklick = !buttonklick;
-      mesh.sendSingle(624409705,"La1");
-    } 
+    power();
   }
 
   if (str1.equals(str3)) {
@@ -100,19 +71,21 @@ void receivedCallback( uint32_t from, String &msg ) {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   mesh.init( MESH_PREFIX, MESH_PASSWORD, &userScheduler, MESH_PORT );
   mesh.onReceive(&receivedCallback);
 
   pinMode(4, INPUT);
   pinMode(5, INPUT_PULLUP);
+  lastButState   = digitalRead(5); 
+  stableButState = lastButState;
 }
 
 void loop() {
   mesh.update();
 
-  button.update();
+  powerBatt();
 
   if (buttonklick == 1) {
     pinMode(4, OUTPUT);
