@@ -15,22 +15,18 @@ const unsigned long DEBOUNCE_MS = 50;   // Антидребезг (50 мс)
 void power () {
   if (buttonklick == 1) {
     buttonklick = 0;
-    mesh.sendSingle(624409705,"La0");
-    mesh.sendSingle(1127818912,"La0");
+    mesh.sendBroadcast("La0");
   } else {
     buttonklick = !buttonklick;
-    mesh.sendSingle(624409705,"La1");
-    mesh.sendSingle(1127818912,"La1");
+    mesh.sendBroadcast("La1");
   }
 }
 
 void echoSend () {
   if (buttonklick == 0) {
-    mesh.sendSingle(624409705,"La0");
-    mesh.sendSingle(1127818912,"La0");
+    mesh.sendBroadcast("La0");
   } else {
-    mesh.sendSingle(624409705,"La1");
-    mesh.sendSingle(1127818912,"La1");
+    mesh.sendBroadcast("La1");
   }
 }
 void powerBatt() {
