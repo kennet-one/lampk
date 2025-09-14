@@ -1,9 +1,9 @@
 // Node ID: 434115122
 #include "painlessMesh.h"
 #include "mash_parameter.h"
+#include "CRCMASH.h"
 
 Scheduler userScheduler;
-painlessMesh  mesh;
 
 bool buttonklick = 0;
 
@@ -15,18 +15,18 @@ const unsigned long DEBOUNCE_MS = 50;   // Антидребезг (50 мс)
 void power () {
   if (buttonklick == 1) {
     buttonklick = 0;
-    mesh.sendBroadcast("La0");
+    sendB("La0");
   } else {
     buttonklick = !buttonklick;
-    mesh.sendBroadcast("La1");
+    sendB("La1");
   }
 }
 
 void echoSend () {
   if (buttonklick == 0) {
-    mesh.sendBroadcast("La0");
+    sendB("La0");
   } else {
-    mesh.sendBroadcast("La1");
+    sendB("La1");
   }
 }
 void powerBatt() {
@@ -52,7 +52,7 @@ void powerBatt() {
   }
 }
 
-void receivedCallback( uint32_t from, String &msg ) {
+void handleBody( const String &msg ) {
   String str1 = msg.c_str();
   String str2 = "lam";
   String str3 = "lamech";
@@ -79,6 +79,8 @@ void setup() {
 }
 
 void loop() {
+  // === CRCMASH queue processing ===
+  for (uint8_t _i=0; _i<4; ++_i){ String _b; if (!qPop(_b)) break; handleBody(_b); }
   mesh.update();
 
   powerBatt();
