@@ -1,9 +1,10 @@
 // Node ID: 434115122
 #include "painlessMesh.h"
 #include "mash_parameter.h"
-#include "CRCMASH.h"
+#include "CRC.h"
 
 Scheduler userScheduler;
+painlessMesh mesh; 
 
 bool buttonklick = 0;
 
@@ -11,6 +12,10 @@ int stableButState    = HIGH;           // Стабільний стан кно�
 int lastButState      = HIGH;           // Останнє "сире" зчитування (ще не стабільне)
 unsigned long lastDebounceTime = 0;     // Коли востаннє змінювався стан
 const unsigned long DEBOUNCE_MS = 50;   // Антидребезг (50 мс)
+
+unsigned long previousMillis = 0;
+const long intervaldelay = 20000; 
+bool messageSent = false;  // Прапорець для відстеження відправки повідомлення
 
 void power () {
   if (buttonklick == 1) {
@@ -68,6 +73,8 @@ void handleBody( const String &msg ) {
 
 void setup() {
   Serial.begin(115200);
+
+  WiFi.setSleep(false);
   
   mesh.init( MESH_PREFIX, MESH_PASSWORD, &userScheduler, MESH_PORT );
   mesh.onReceive(&receivedCallback);
@@ -79,6 +86,16 @@ void setup() {
 }
 
 void loop() {
+
+  if (!messageSent) { // Перевіряємо, чи повідомлення ще не було відправлено
+    unsigned long currentMillis = millis();
+
+    if (currentMillis - previousMillis >= intervaldelay) {
+      echoSend();
+      // Встановлюємо прапорець, щоб більше не відправляти повідомлення
+      messageSent = true;
+    }
+  }
   // === CRCMASH queue processing ===
   for (uint8_t _i=0; _i<4; ++_i){ String _b; if (!qPop(_b)) break; handleBody(_b); }
   mesh.update();
