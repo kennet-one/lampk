@@ -103,7 +103,7 @@ esp_err_t lamp_node_init(void)
 {
 	if (s_initialized) return ESP_OK;
 
-	/* External pulldown is the hardware fail-safe; set the inactive level first. */
+	/* Configure the selected fail-safe mode before publishing node readiness. */
 	esp_err_t err = gpio_set_level(RELAY_GPIO, relay_level(false));
 	if (err != ESP_OK) return err;
 	gpio_config_t relay_config = {
@@ -161,7 +161,6 @@ bool lamp_node_state(void)
 bool lamp_node_handle_command(const char *text, char *reply, size_t reply_size)
 {
 	if (!text || !reply || reply_size == 0 || !s_initialized) return false;
-
 	if (strcmp(text, "lam") == 0) {
 		(void)toggle_state();
 	} else if (strcmp(text, "lamech") == 0) {

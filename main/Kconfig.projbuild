@@ -178,17 +178,16 @@ menu "lampk Configuration"
     config LAMPK_RELAY_GPIO
         int "Relay drive GPIO"
         range 0 48
-        default 4
+        default 6
         help
-            GPIO that drives the external transistor or MOSFET connected to
-            the active-low relay module input.
+            GPIO connected to the relay module's 3.3 V-compatible input.
 
     config LAMPK_RELAY_DRIVE_ACTIVE_HIGH
         bool "Relay drive is active high"
         default y
         help
-            Enable for the recommended transistor interface: GPIO high turns
-            the transistor on and pulls the relay module input low.
+            GPIO high enables the installed 3.3 V-compatible high-level
+            relay. GPIO low disables it, including during initialization.
 
     config LAMPK_BUTTON_GPIO
         int "Button GPIO"

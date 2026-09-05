@@ -8,18 +8,17 @@ shared reliable ESP-MESH core, typed telemetry, remote OTA and active ping.
 
 | Signal | ESP32-S3 pin | Connection |
 |---|---:|---|
-| Relay drive | GPIO4 | Through a transistor or logic-level MOSFET to relay `IN` |
-| Button | GPIO5 | Button between GPIO5 and GND; internal pull-up is enabled |
+| Relay drive | GPIO6 | Board pad marked `6`; 3.3 V-compatible active-high module input |
+| Button | GPIO5 | Board pad marked `5`; button to GND with internal pull-up enabled |
 | Relay power | 5V | Relay module `VCC` |
-| Common ground | GND | ESP32-S3, transistor and relay module grounds together |
+| Common ground | GND | ESP32-S3 and relay module grounds together |
 | Board power | 5V/VBUS/VIN | Regulated 5V supply; never feed 5V into `3V3` |
 
-The recommended relay interface is GPIO4 through a 1 kOhm to 2.2 kOhm
-resistor into an NPN base (or a logic-level MOSFET gate), with a 10 kOhm
-pulldown to ground. Connect the transistor collector/drain to the active-low
-relay `IN`, and emitter/source to GND. This keeps the relay off while the
-ESP32-S3 is booting and prevents a 5V pull-up on the relay board from reaching
-the ESP32-S3 GPIO.
+The replacement relay uses 3.3 V-compatible active-high logic: GPIO6 LOW is
+OFF and GPIO6 HIGH is ON. Firmware preloads OFF before enabling the output
+and starts OFF after every reboot. Temporary GPIO probe commands are removed.
+High impedance does not isolate a GPIO from external voltage; never apply
+5 V to an ESP32-S3 signal pad.
 
 GPIO0, GPIO3, GPIO45 and GPIO46 are strapping pins and are intentionally not
 used. GPIO19/GPIO20 remain available for native USB. GPIO26-GPIO37 remain free
