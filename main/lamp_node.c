@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 
 #define RELAY_GPIO ((gpio_num_t)CONFIG_LAMPK_RELAY_GPIO)
 #define BUTTON_GPIO ((gpio_num_t)CONFIG_LAMPK_BUTTON_GPIO)
@@ -23,6 +24,7 @@ static const char *TAG = "lamp";
 static portMUX_TYPE s_lock = portMUX_INITIALIZER_UNLOCKED;
 static bool s_initialized;
 static bool s_state;
+static SemaphoreHandle_t s_output_lock;
 static lamp_node_event_cb_t s_event_callback;
 static void *s_event_user;
 
@@ -38,7 +40,7 @@ static void format_state_reply(char *reply, size_t reply_size)
 	reply[reply_size - 1] = '\0';
 }
 
-static esp_err_t set_state(bool enabled)
+static esp_err_t set_state_locked(bool enabled)
 {
 	esp_err_t err = gpio_set_level(RELAY_GPIO, relay_level(enabled));
 	if (err != ESP_OK) {
@@ -56,7 +58,21 @@ static esp_err_t set_state(bool enabled)
 
 static esp_err_t toggle_state(void)
 {
-	return set_state(!lamp_node_state());
+	if (!s_output_lock || xSemaphoreTake(s_output_lock, pdMS_TO_TICKS(1000)) != pdTRUE)
+		return ESP_ERR_TIMEOUT;
+	esp_err_t err = set_state_locked(!lamp_node_state());
+	xSemaphoreGive(s_output_lock);
+	return err;
+}
+
+esp_err_t lamp_node_set_state(bool enabled)
+{
+	if (!s_initialized) return ESP_ERR_INVALID_STATE;
+	if (!s_output_lock || xSemaphoreTake(s_output_lock, pdMS_TO_TICKS(1000)) != pdTRUE)
+		return ESP_ERR_TIMEOUT;
+	esp_err_t err = set_state_locked(enabled);
+	xSemaphoreGive(s_output_lock);
+	return err;
 }
 
 static void publish_button_event(void)
@@ -124,6 +140,8 @@ esp_err_t lamp_node_init(void)
 		.intr_type = GPIO_INTR_DISABLE,
 	};
 	if ((err = gpio_config(&button_config)) != ESP_OK) return err;
+	if (!s_output_lock) s_output_lock = xSemaphoreCreateMutex();
+	if (!s_output_lock) return ESP_ERR_NO_MEM;
 
 	portENTER_CRITICAL(&s_lock);
 	s_state = false;
@@ -162,7 +180,11 @@ bool lamp_node_handle_command(const char *text, char *reply, size_t reply_size)
 {
 	if (!text || !reply || reply_size == 0 || !s_initialized) return false;
 	if (strcmp(text, "lam") == 0) {
-		(void)toggle_state();
+		esp_err_t err = toggle_state();
+		if (err != ESP_OK) {
+			snprintf(reply, reply_size, "ERR:lamp:%d", (int)err);
+			return true;
+		}
 	} else if (strcmp(text, "lamech") == 0) {
 		/* Read-only state query. */
 	} else if (strcmp(text, "lampk.status") == 0) {

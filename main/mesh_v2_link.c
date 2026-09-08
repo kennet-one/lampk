@@ -21,6 +21,7 @@
 #include "mesh_log_stream.h"
 #include "mesh_time_sync.h"
 #include "lamp_node.h"
+#include "lamp_schedule.h"
 
 static const char *TAG = "mesh_link";
 static keemash_mesh_tx_broker_t *s_tx_broker;
@@ -165,8 +166,12 @@ bool keemash_mesh_node_on_control_command_result(const char *text, uint8_t *stat
 	}
 
 	char reply[32] = {0};
-	if (!lamp_node_handle_command(text, reply, sizeof(reply))) return false;
-	if (status) *status = MESH_V2_CONTROL_STATUS_OK;
+	esp_err_t error = ESP_OK;
+	bool handled = lamp_schedule_execute_command(text, &error, reply, sizeof(reply));
+	if (!handled) handled = lamp_node_handle_command(text, reply, sizeof(reply));
+	if (!handled) return false;
+	if (strncmp(reply, "ERR:", 4) == 0) error = ESP_FAIL;
+	if (status) *status = error == ESP_OK ? MESH_V2_CONTROL_STATUS_OK : MESH_V2_CONTROL_STATUS_FAILED;
 	if (result && result_size > 0) {
 		snprintf(result, result_size, "%s", reply);
 		result[result_size - 1] = '\0';

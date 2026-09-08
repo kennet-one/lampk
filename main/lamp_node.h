@@ -13,3 +13,4 @@ esp_err_t lamp_node_init(void);
 void lamp_node_set_event_callback(lamp_node_event_cb_t callback, void *user);
 bool lamp_node_handle_command(const char *text, char *reply, size_t reply_size);
 bool lamp_node_state(void);
+esp_err_t lamp_node_set_state(bool enabled);

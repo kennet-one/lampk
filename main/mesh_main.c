@@ -33,6 +33,7 @@
 #include "mesh_time_sync.h"
 #include "mesh_v2_link.h"
 #include "lamp_node.h"
+#include "lamp_schedule.h"
 
 #define RX_SIZE 512
 #define RECOVERY_CHECK_MS 5000U
@@ -485,6 +486,7 @@ void app_main(void)
 	ESP_ERROR_CHECK(lamp_node_init());
 	detect_rollback_state();
 	ESP_ERROR_CHECK(init_nvs());
+	ESP_ERROR_CHECK(lamp_schedule_start());
 	ESP_ERROR_CHECK(esp_netif_init());
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	ESP_ERROR_CHECK(esp_netif_create_default_wifi_mesh_netifs(&s_netif_sta, NULL));
@@ -498,6 +500,7 @@ void app_main(void)
 	mesh_time_sync_init();
 	s_boot_seq = esp_random();
 	ESP_ERROR_CHECK(mesh_v2_link_init(TAG, LAMPK_RELAY_ELIGIBLE));
+	ESP_ERROR_CHECK(lamp_schedule_publisher_start());
 	ESP_ERROR_CHECK(keemash_mesh_ota_receiver_start());
 
 	ESP_ERROR_CHECK(esp_mesh_init());
