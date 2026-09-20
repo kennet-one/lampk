@@ -28,7 +28,7 @@ for flash/PSRAM compatibility.
 
 The current board has a 16 MB flash chip and 8 MB embedded octal PSRAM. The
 partition table provides two 8128 KB OTA application slots. The project pins
-`keemash_mesh_core` to public tag `v0.6.5`. Local Wi-Fi and mesh credentials
+`keemash_mesh_core` to public tag `v0.9.4`. Local Wi-Fi and mesh credentials
 belong in ignored configuration; they must never be committed.
 
 ```powershell
